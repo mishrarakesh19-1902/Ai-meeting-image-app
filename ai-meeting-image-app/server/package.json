@@ -1,0 +1,19 @@
+{
+  "name": "ai-meeting-image-server",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node index.js",
+    "start": "NODE_ENV=production node index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "fs-extra": "^11.2.0",
+    "nodemailer": "^6.9.13",
+    "openai": "^4.57.0",
+    "uuid": "^9.0.1"
+  }
+}
