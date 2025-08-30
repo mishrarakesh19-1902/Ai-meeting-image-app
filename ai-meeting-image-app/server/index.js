@@ -145,7 +145,6 @@
 // });
 
 
-
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
@@ -163,15 +162,25 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 8080;
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || `http://localhost:${PORT}`;
-const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:5173";
 
-app.use(cors({
-  origin: CLIENT_ORIGIN,
-  credentials: true
-}));
-// app.use(cors({
-//   origin: "*"
-// }));
+// ✅ Allow local + deployed frontend
+const allowedOrigins = [
+  "http://localhost:5173", // Local dev
+  "https://ai-meeting-image-app-1.onrender.com" // Deployed frontend
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
 
 app.use(express.json({ limit: "2mb" }));
 
@@ -195,11 +204,9 @@ app.post("/api/generate", async (req, res) => {
       return res.status(400).json({ error: "Prompt is required." });
     }
 
-    // default size if not provided
     const imgSize = size || "1024x1024";
     const [width, height] = imgSize.split("x").map(Number);
 
-    // Build form-data body
     const formData = new FormData();
     formData.append("prompt", prompt);
     formData.append("output_format", "png");
@@ -212,7 +219,7 @@ app.post("/api/generate", async (req, res) => {
         method: "POST",
         headers: {
           Authorization: `Bearer ${process.env.STABILITY_API_KEY}`,
-          Accept: "application/json"
+          Accept: "application/json",
         },
         body: formData,
       }
@@ -225,8 +232,6 @@ app.post("/api/generate", async (req, res) => {
     }
 
     const data = await response.json();
-
-    // The image comes base64-encoded
     const b64 = data?.image;
     if (!b64) {
       return res.status(500).json({ error: "No image data returned." });
@@ -255,8 +260,8 @@ function buildTransport() {
     secure: String(SMTP_SECURE).toLowerCase() === "true",
     auth: {
       user: SMTP_USER,
-      pass: SMTP_PASS
-    }
+      pass: SMTP_PASS,
+    },
   });
 }
 
@@ -271,7 +276,6 @@ app.post("/api/share", async (req, res) => {
     const exists = await fs.pathExists(filePath);
     if (!exists) return res.status(404).json({ error: "Image not found." });
 
-    // Parse recipients
     const recipients = (Array.isArray(to) ? to : String(to).split(/[,;\s]+/))
       .map(s => s.trim())
       .filter(Boolean);
@@ -301,9 +305,9 @@ app.post("/api/share", async (req, res) => {
         {
           filename: `meeting-image-${id}.png`,
           path: filePath,
-          contentType: "image/png"
-        }
-      ]
+          contentType: "image/png",
+        },
+      ],
     });
 
     res.json({ ok: true, imageUrl, recipients });
@@ -314,5 +318,5 @@ app.post("/api/share", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server listening on http://localhost:${PORT}`);
-})
+  console.log(`✅ Server listening on http://localhost:${PORT}`);
+});
